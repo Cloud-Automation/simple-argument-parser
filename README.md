@@ -1,4 +1,4 @@
-# Simple Argument Parser (SAP)
+# Simple Argument Parser (SAP) [![Build Status](https://travis-ci.org/Cloud-Automation/simple-argument-parser.png)](https://travis-ci.org/Cloud-Automation/simple-argument-parser)
 
 This library provides means and methods to parse command line arguments in the form of
 
