@@ -7,4 +7,4 @@ add_executable(tests ${TEST_APP_SOURCES})
 
 set_target_properties(tests PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(tests gtest gtest_main sap pthread)
-target_compile_features(tests PRIVATE cxx_range_for)
+
