@@ -14,4 +14,4 @@ before_script:
     - cmake -DWITH-TESTS=On ..
     - make
     - cd ..
-script: "sh ./build/tests/tests"
+script: "sh ./.travis-build.sh"
