@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1.0)
+cmake_minimum_required (VERSION 2.8.7)
 project (SimpleArgumentParser C CXX)
 
 set (SimpleArgumentParser_VERSION_MAJOR 0)
