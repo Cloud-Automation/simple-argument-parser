@@ -11,3 +11,6 @@ option(WITH-TESTS "Compile the test application." OFF)
 IF(WITH-TESTS)
     add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
 endif()
+
+install (TARGETS sap DESTINATION /usr/lib)
+install (FILES ${PROJECT_SOURCE_DIR}/src/sap.h DESTINATION /usr/include)
