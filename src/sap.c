@@ -49,11 +49,11 @@ int sap_add_command(sap_t* parser, char* command, command_handler handler) {
 
 }
 
-int sap_set_default(sap_t* parser, command_handler handler) {
+void sap_set_default(sap_t* parser, command_handler handler) {
 
     if (parser == NULL || handler == NULL) {
     
-        return -1;
+        return;
     
     }
 
@@ -62,8 +62,6 @@ int sap_set_default(sap_t* parser, command_handler handler) {
     command->handler = handler;
 
     parser->default_command = command;
-
-    return 0;
 
 }
 
@@ -267,7 +265,7 @@ int sap_execute_ex(sap_t* parser, int argc, char* argv[], sap_options_t* extra_o
     }
 
     /* collect remaining arguments */
-    char* new_argv[new_argc];
+    char** new_argv = calloc(new_argc, sizeof(char*));
 
     int j = 0;
     for (int i = new_argc_offset; i < argc; i += 1) {
@@ -280,12 +278,38 @@ int sap_execute_ex(sap_t* parser, int argc, char* argv[], sap_options_t* extra_o
 
     if (extra_options != NULL) {
 
-        for (int i = 0; extra_options->list[i]; i += 1) {
+        for (int i = 0; extra_options->list[i] != NULL; i += 1) {
 
-            options->list[option_counter + 0] = extra_options->list[i];
-            options->list[option_counter + 1] = NULL; 
+            int added = 0;
 
-            option_counter += 1;
+            for (int j = 0; options->list[j] != NULL; j += 1) {
+
+                if (strcmp(options->list[j]->label, extra_options->list[i]->label) != 0) {
+                    continue;
+                }
+
+                /* overwrite existing value */
+
+                free(options->list[j]);
+
+                options->list[j] = extra_options->list[i];
+
+                added = 1;
+
+                break;
+
+            }
+
+            if (added == 0) {
+
+                /* add new option at the end of the list */
+
+                options->list[option_counter + 0] = extra_options->list[i];
+                options->list[option_counter + 1] = NULL; 
+
+                option_counter += 1;
+
+            }
 
         }
 
@@ -297,5 +321,62 @@ int sap_execute_ex(sap_t* parser, int argc, char* argv[], sap_options_t* extra_o
 
 void sap_destroy(sap_t* parser) {
 
+    if (parser == NULL) {
+        return;
+    }
+
+    /* remove default command */
+    free(parser->default_command);
+
+    /* go through command list and
+     * remove every command */
+
+    for (int i = 0; parser->commands[i] != NULL; i += 1) {
+    
+        free(parser->commands[i]);
+    
+    }
+
+    free(parser);
+
+}
+
+char* sap_option_get(sap_options_t* options, char* key) {
+
+    if (options == NULL) {
+        return NULL;
+    }
+
+    for (int i = 0; options->list[i] != NULL; i += 1) {
+  
+        sap_option_t* cur_opt = options->list[i];
+    
+        if (strcmp(cur_opt->label, key) == 0) {
+            return cur_opt->value;
+        }
+
+    }
+
+    return NULL;
+
+}
+
+int sap_option_enabled(sap_options_t* options, char* key) {
+
+    if (options == NULL) {
+        return -1;
+    }
+
+    for (int i = 0; options->list[i] != NULL; i += 1) {
+    
+        sap_option_t* cur_opt = options->list[i];
+    
+        if (strcmp(cur_opt->label, key) == 0) {
+            return cur_opt->is_flag;
+        }
+
+    }
+
+    return 0;
 
 }
