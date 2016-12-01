@@ -207,15 +207,15 @@ TEST(SAP, ExecuteWithMergedOptions) {
     sap_options_t* old_options = (sap_options_t*) calloc(1, sizeof(sap_options_t));
 
     sap_option_t opt_a = {
-        .label = (char*) "key",
-        .value = (char*) "previous_value",
-        .is_flag = 0
+        (char*) "key",
+        (char*) "previous_value",
+        0
     };
 
     sap_option_t opt_b = {
-        .label = (char*) "new_key",
-        .value = NULL,
-        .is_flag = 1
+        (char*) "new_key",
+        NULL,
+        1
     };
 
     old_options->list[0] = &opt_a;
