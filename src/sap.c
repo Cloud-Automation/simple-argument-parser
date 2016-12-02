@@ -65,7 +65,7 @@ void sap_set_default(sap_t* parser, command_handler handler) {
 
 }
 
-#define option_regex "^--\\(\\w\\+\\)\\(=\\([^\\s]\\+\\)\\)\\?$"
+#define option_regex "^--\\(\\w\\+\\)\\(=\\([^[:space:]]\\+\\)\\)\\?$"
 
 static int sap_is_option(char* arg) {
 
@@ -86,6 +86,7 @@ static int sap_is_option(char* arg) {
     if (!reti) {
         return 1;
     } else if (reti == REG_NOMATCH) {
+        printf("Not an option (%s).\n", arg);
         return 0;
     } 
 
@@ -157,7 +158,7 @@ static sap_option_t* sap_parse_option(char* arg) {
 }
 
 
-#define command_regex "^[^--]\\(\\w\\|\\/\\|.\\|-\\)\\+$"
+#define command_regex "^[^--][[:alnum:]\\.\\/-]\\+$"
 
 static int sap_is_command(char* arg) {
 

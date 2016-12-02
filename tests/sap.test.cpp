@@ -147,17 +147,16 @@ TEST(SAP, ExecuteMatchedHandlerWithOptions) {
 
 }
 
-TEST(SAP, ExecuteMatchedHandlerWithOptionsAndTrailingCommands) {
+TEST(SAP, ExecuteDefaultHandlerWithOptionsAndTrailingCommands) {
 
     sap_t* parser = sap_create();
 
-    sap_set_default(parser, default_handler);
-    sap_add_command(parser, (char*) "command", specific_handler);
+    sap_set_default(parser, specific_handler);
 
     int argc = 5;
     char* argv[5] = { 
-        (char*) "command", 
-        (char*) "--key=value", 
+        (char*) "./some-common-application", 
+        (char*) "--key=some.value", 
         (char*) "--flag",
         (char*) "subcommand",
         (char*) "--suboption" 
@@ -176,7 +175,7 @@ TEST(SAP, ExecuteMatchedHandlerWithOptionsAndTrailingCommands) {
 
     ASSERT_TRUE(catched_options->list[0] != NULL);
     ASSERT_STREQ(catched_options->list[0]->label, "key");
-    ASSERT_STREQ(catched_options->list[0]->value, "value");
+    ASSERT_STREQ(catched_options->list[0]->value, "some.value");
     ASSERT_EQ(0, catched_options->list[0]->is_flag);
 
     ASSERT_TRUE(catched_options->list[1] != NULL);
