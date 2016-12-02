@@ -204,17 +204,24 @@ int sap_execute_ex(sap_t* parser, int argc, char* argv[], sap_options_t* extra_o
     char* command_str = argv[0];
     int new_argc = argc;
     int new_argc_offset = 0;
+    char** new_argv = calloc(new_argc, sizeof(char*));
     int option_counter = 0;
 
 
-    if (!sap_is_command(command_str)) {
+    sap_command_t* command = parser->default_command;
+    sap_options_t* options = calloc(1, sizeof(sap_options_t));
+
+    if (argc == 0 || !sap_is_command(command_str)) {
+
+        if (command != NULL) {
+            return command->handler(new_argc, new_argv, options);
+        }
+
         return -1;
     }
 
     new_argc -= 1;
     new_argc_offset += 1;
-
-    sap_options_t* options = calloc(1, sizeof(sap_options_t));
 
     for (int i = 1; i < argc; i += 1) {
 
@@ -244,7 +251,6 @@ int sap_execute_ex(sap_t* parser, int argc, char* argv[], sap_options_t* extra_o
 
     /* get command from the parsers commands list */
 
-    sap_command_t* command = parser->default_command;
 
     for (int i = 0; parser->commands[i] != NULL; i += 1) {
     
@@ -266,7 +272,6 @@ int sap_execute_ex(sap_t* parser, int argc, char* argv[], sap_options_t* extra_o
     }
 
     /* collect remaining arguments */
-    char** new_argv = calloc(new_argc, sizeof(char*));
 
     int j = 0;
     for (int i = new_argc_offset; i < argc; i += 1) {
