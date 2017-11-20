@@ -1,9 +1,9 @@
 cmake_minimum_required (VERSION 2.8.7)
 project (SimpleArgumentParser C CXX)
 
-
 set (SimpleArgumentParser_VERSION_MAJOR 0)
 set (SimpleArgumentParser_VERSION_MINOR 1)
+
 option(WITH-TESTS "Compile with test cases." OFF)
 option(STATIC "Compile shared/static library." "SHARED")
 
@@ -21,5 +21,5 @@ IF(WITH-TESTS)
     add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
 endif()
 
-install (TARGETS sap DESTINATION /usr/lib)
-install (FILES ${PROJECT_SOURCE_DIR}/src/sap.h DESTINATION /usr/include)
+install (TARGETS sap DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install (FILES ${PROJECT_SOURCE_DIR}/src/sap.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
