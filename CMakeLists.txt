@@ -5,8 +5,13 @@ project (SimpleArgumentParser C CXX)
 set (SimpleArgumentParser_VERSION_MAJOR 0)
 set (SimpleArgumentParser_VERSION_MINOR 1)
 option(WITH-TESTS "Compile with test cases." OFF)
+option(STATIC "Compile shared/static library." "SHARED")
 
-add_library(sap SHARED "${CMAKE_SOURCE_DIR}/src/sap.c" "${CMAKE_SOURCE_DIR}/src/sap.h")
+IF (STATIC) 
+  add_library(sap STATIC "${CMAKE_SOURCE_DIR}/src/sap.c" "${CMAKE_SOURCE_DIR}/src/sap.h")
+ELSE()
+  add_library(sap SHARED "${CMAKE_SOURCE_DIR}/src/sap.c" "${CMAKE_SOURCE_DIR}/src/sap.h")
+ENDIF()
 
 set(CMAKE_C_FLAGS "--std=gnu99" ${CMAKE_C_FLAGS})
 
