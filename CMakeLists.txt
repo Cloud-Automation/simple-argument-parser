@@ -4,6 +4,7 @@ project (SimpleArgumentParser C CXX)
 
 set (SimpleArgumentParser_VERSION_MAJOR 0)
 set (SimpleArgumentParser_VERSION_MINOR 1)
+option(WITH-TESTS "Compile with test cases." OFF)
 
 add_library(sap SHARED "${CMAKE_SOURCE_DIR}/src/sap.c" "${CMAKE_SOURCE_DIR}/src/sap.h")
 

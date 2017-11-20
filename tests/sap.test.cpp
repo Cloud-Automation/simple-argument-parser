@@ -1,157 +1,187 @@
 #include "sap.h"
 #include <gtest/gtest.h>
 
-int test_value = 0;
+int call_count = 0;
+int return_value = 0;
 
-int catched_argc;
-char** catched_argv;
-sap_options_t* catched_options;
+sap_option_list_t* catched_options;
+sap_command_list_t* catched_commands;
 
-int default_handler(int argc, char* argv[], sap_options_t* options) {
+int default_handler(sap_command_list_t* commands, sap_option_list_t* options) {
 
-    test_value += 1;
+    call_count += 1;
 
-    return 123;
+    return return_value;
 
 }
 
-int specific_handler(int argc, char* argv[], sap_options_t* options) {
+int specific_handler(sap_command_list_t* commands, sap_option_list_t* options) {
 
-    test_value += 2;
+    call_count += 1;
 
-    catched_argc = argc;
-    catched_argv = argv;
     catched_options = options;
+    catched_commands = commands;
 
-    return 321;
+    return return_value;
 
 }
 
 TEST(SAP, ExecuteNoArgumentsNoHandler) {
 
-    sap_t* parser = sap_create();
 
     int argc = 0;
     char* argv[0];
 
-    test_value = 0;
-    ASSERT_EQ(0, test_value);
+    sap_t parser;
 
-    int ret = sap_execute(parser, argc, argv);
+    int retCreate = sap_init(&parser, argc, argv);
 
-    ASSERT_EQ(0, test_value);
+    ASSERT_EQ(0, retCreate);
+
+    call_count = 0;
+    return_value = 1;
+    ASSERT_EQ(0, call_count);
+
+    int ret = sap_execute(&parser);
+
+    ASSERT_EQ(0, call_count);
     ASSERT_EQ(-1, ret);
 
-    sap_destroy(parser);
+    sap_free(&parser);
 
 }
 
 TEST(SAP, ExecuteDefaultHandlerWithNoArguments) {
 
-    sap_t* parser = sap_create();
-
-    sap_set_default(parser, default_handler);
 
     int argc = 0;
     char* argv[0];
 
-    test_value = 0;
-    ASSERT_EQ(0, test_value);
+    sap_t parser;
 
-    int ret = sap_execute(parser, argc, argv);
+    sap_init(&parser, argc, argv);
 
-    ASSERT_EQ(1, test_value);
+    sap_set_default(&parser, default_handler);
+
+    call_count = 0;
+    return_value = 123;
+    ASSERT_EQ(0, call_count);
+
+    int ret = sap_execute(&parser);
+
+    ASSERT_EQ(1, call_count);
     ASSERT_EQ(123, ret);
 
-    sap_destroy(parser);
+    sap_free(&parser);
 
 }
+
 
 TEST(SAP, ExecuteDefaultHandlerWithOneUnmatchedCommand) {
 
-    sap_t* parser = sap_create();
-
-    sap_set_default(parser, default_handler);
-
     int argc = 1;
     char* argv[1] = { (char*) "command" };
 
-    test_value = 0;
-    ASSERT_EQ(0, test_value);
+    sap_t parser;
 
-    int ret = sap_execute(parser, argc, argv);
+    sap_init(&parser, argc, argv);
 
-    ASSERT_EQ(1, test_value);
-    ASSERT_EQ(123, ret);
+    sap_set_default(&parser, default_handler);
 
-    sap_destroy(parser);
+    call_count = 0;
+    return_value = 321;
+    ASSERT_EQ(0, call_count);
+
+    int ret = sap_execute(&parser);
+
+    ASSERT_EQ(1, call_count);
+    ASSERT_EQ(321, ret);
+
+    sap_free(&parser);
 
 }
 
+
 TEST(SAP, ExecuteMatchedHandlerWithoutOptions) {
 
-    sap_t* parser = sap_create();
+    int argc = 2;
+    char* argv[2] = { (char*) "filename", (char*) "command" };
 
-    sap_set_default(parser, default_handler);
-    sap_add_command(parser, (char*) "command", specific_handler);
+    sap_t parser;
+    
+    sap_init(&parser, argc, argv);
 
-    int argc = 1;
-    char* argv[1] = { (char*) "command" };
+    sap_set_default(&parser, default_handler);
+    sap_add_command(&parser, (char*) "command", specific_handler);
 
-    test_value = 0;
-    ASSERT_EQ(0, test_value);
+    call_count = 0;
+    return_value = 111;
+    ASSERT_EQ(0, call_count);
 
-    int ret = sap_execute(parser, argc, argv);
+    int ret = sap_execute(&parser);
 
-    ASSERT_EQ(2, test_value);
-    ASSERT_EQ(321, ret);
-    ASSERT_EQ(0, catched_argc);
+    ASSERT_EQ(1, call_count);
+    ASSERT_EQ(111, ret);
 
-    sap_destroy(parser);
+    sap_free(&parser);
 
 }
 
 TEST(SAP, ExecuteMatchedHandlerWithOptions) {
 
-    sap_t* parser = sap_create();
-
-    sap_set_default(parser, default_handler);
-    sap_add_command(parser, (char*) "command", specific_handler);
-
-    int argc = 3;
-    char* argv[3] = { 
+    int argc = 5;
+    char* argv[5] = {
+        (char*) "filename", 
         (char*) "command", 
+        (char*) "-faultyCommand",
         (char*) "--key=value", 
         (char*) "--flag" 
     };
 
-    test_value = 0;
-    ASSERT_EQ(0, test_value);
+    sap_t parser;
+    
+    sap_init(&parser, argc, argv);
 
-    int ret = sap_execute(parser, argc, argv);
+    sap_set_default(&parser, default_handler);
+    sap_add_command(&parser, (char*) "command", specific_handler);
 
-    ASSERT_EQ(2, test_value);
+    call_count = 0;
+    return_value = 321;
+    ASSERT_EQ(0, call_count);
+
+    int ret = sap_execute(&parser);
+
+    ASSERT_EQ(1, call_count);
     ASSERT_EQ(321, ret);
-    ASSERT_EQ(0, catched_argc);
 
-    ASSERT_TRUE(catched_options->list[0] != NULL);
-    ASSERT_STREQ(catched_options->list[0]->label, "key");
-    ASSERT_STREQ(catched_options->list[0]->value, "value");
-    ASSERT_EQ(0, catched_options->list[0]->is_flag);
+    sap_option_t* first = sap_get_option_by_index(catched_options, 0);
+    sap_option_t* second = sap_get_option_by_index(catched_options, 1);
+    sap_option_t* third = sap_get_option_by_index(catched_options, 2);
 
-    ASSERT_TRUE(catched_options->list[1] != NULL);
-    ASSERT_STREQ(catched_options->list[1]->label, "flag");
-    ASSERT_EQ(1, catched_options->list[1]->is_flag);
+    ASSERT_TRUE(first != NULL);
+    ASSERT_STREQ(first->label, "key");
+    ASSERT_STREQ(first->value, "value");
+    ASSERT_EQ(0, first->is_flag);
 
-    sap_destroy(parser);
+    ASSERT_TRUE(second != NULL);
+    ASSERT_STREQ(second->label, "flag");
+    ASSERT_EQ(1, second->is_flag);
+
+    ASSERT_TRUE(third == NULL);
+
+    sap_option_t* key_option = sap_get_option_by_key(catched_options, (char*) "key");
+    sap_option_t* flag_option = sap_get_option_by_key(catched_options, (char*) "flag");
+    sap_option_t* other_option = sap_get_option_by_key(catched_options, (char*) "other");
+
+    ASSERT_TRUE(key_option == first);
+    ASSERT_TRUE(flag_option == second);
+    ASSERT_TRUE(other_option == NULL);
+
+    sap_free(&parser);
 
 }
 
 TEST(SAP, ExecuteDefaultHandlerWithOptionsAndTrailingCommands) {
-
-    sap_t* parser = sap_create();
-
-    sap_set_default(parser, specific_handler);
 
     int argc = 5;
     char* argv[5] = { 
@@ -162,143 +192,39 @@ TEST(SAP, ExecuteDefaultHandlerWithOptionsAndTrailingCommands) {
         (char*) "--suboption" 
     };
 
-    test_value = 0;
-    ASSERT_EQ(test_value, 0);
-
-    int ret = sap_execute(parser, argc, argv);
-
-    ASSERT_EQ(2, test_value);
-    ASSERT_EQ(321, ret);
-    ASSERT_EQ(2, catched_argc);
-    ASSERT_STREQ("subcommand", catched_argv[0]);
-    ASSERT_STREQ("--suboption", catched_argv[1]);
-
-    ASSERT_TRUE(catched_options->list[0] != NULL);
-    ASSERT_STREQ(catched_options->list[0]->label, "key");
-    ASSERT_STREQ(catched_options->list[0]->value, "some.value");
-    ASSERT_EQ(0, catched_options->list[0]->is_flag);
-
-    ASSERT_TRUE(catched_options->list[1] != NULL);
-    ASSERT_STREQ(catched_options->list[1]->label, "flag");
-    ASSERT_EQ(1, catched_options->list[1]->is_flag);
-
-    sap_destroy(parser);
-
-}
-
-TEST(SAP, ExecuteWithMergedOptions) {
-
-    sap_t* parser = sap_create();
-
-    sap_set_default(parser, default_handler);
-    sap_add_command(parser, (char*) "command", specific_handler);
-
-    int argc = 3;
-    char* argv[3] = { 
-        (char*) "command", 
-        (char*) "--key=value", 
-        (char*) "--flag"
-    };
-
-    test_value = 0;
-    ASSERT_EQ(test_value, 0);
-
-    sap_options_t* old_options = (sap_options_t*) calloc(1, sizeof(sap_options_t));
-
-    sap_option_t opt_a = {
-        (char*) "key",
-        (char*) "previous_value",
-        0
-    };
-
-    sap_option_t opt_b = {
-        (char*) "new_key",
-        NULL,
-        1
-    };
-
-    old_options->list[0] = &opt_a;
-    old_options->list[1] = &opt_b;
-    old_options->list[2] = NULL;
-
-    sap_execute_ex(parser, argc, argv, old_options);
-
-
-    ASSERT_TRUE(catched_options->list[0] != NULL);
-    ASSERT_STREQ(catched_options->list[0]->label, "key");
-    ASSERT_STREQ(catched_options->list[0]->value, "previous_value");
-    ASSERT_EQ(0, catched_options->list[0]->is_flag);
-
-    ASSERT_TRUE(catched_options->list[1] != NULL);
-    ASSERT_STREQ(catched_options->list[1]->label, "flag");
-    ASSERT_EQ(1, catched_options->list[1]->is_flag);
-
-    ASSERT_TRUE(catched_options->list[2] != NULL);
-    ASSERT_STREQ(catched_options->list[2]->label, "new_key");
-    ASSERT_EQ(1, catched_options->list[2]->is_flag);
-
-    sap_destroy(parser);
-
-}
-
-
-
-class OptionsTest : public ::testing::Test {
-
-    protected:
-        sap_t* parser;
-
-    OptionsTest() {
+    sap_t parser;
     
-    }
+    sap_init(&parser, argc, argv);
 
-    virtual void SetUp() {
-    
-        parser = sap_create();
+    sap_set_default(&parser, specific_handler);
 
-        sap_add_command(parser, (char*) "command", specific_handler);
+    call_count = 0;
+    return_value = 123;
+    ASSERT_EQ(0, call_count);
 
-        int argc = 3;
-        char* argv[3] = { 
-            (char*) "command", 
-            (char*) "--key=value", 
-            (char*) "--flag" 
-        };
+    int ret = sap_execute(&parser);
 
-        sap_execute(parser, argc, argv);
+    ASSERT_EQ(1, call_count);
+    ASSERT_EQ(123, ret);
 
-    }
+    sap_option_t* first = catched_options->first;
+    sap_command_t* first_command = catched_commands->first;
 
-    virtual void TearDown() {
-    
-        sap_destroy(parser);
+    ASSERT_TRUE(first != NULL);
+    ASSERT_STREQ(first->label, "key");
+    ASSERT_STREQ(first->value, "some.value");
+    ASSERT_TRUE(first_command != NULL);
+    ASSERT_STREQ(first_command->label, "subcommand");
+    ASSERT_EQ(0, first->is_flag);
 
-    }
+    sap_option_t* second = first->next;
+    sap_command_t* second_command = first_command->next;
 
-};
+    ASSERT_TRUE(second != NULL);
+    ASSERT_TRUE(second_command == NULL);
+    ASSERT_STREQ(second->label, "flag");
+    ASSERT_EQ(1, second->is_flag);
 
-TEST_F(OptionsTest, CheckKeyValues) {
-
-    /* we can assume that the specific_handler is beeing called */
-
-    char* value_a = sap_option_get(catched_options, (char*) "key");
-    char* value_b = sap_option_get(catched_options, (char*) "flag");
-    char* value_c = sap_option_get(catched_options, (char*) "unknown"); 
-
-    ASSERT_STREQ(value_a, "value");
-    ASSERT_TRUE(value_b == NULL);
-    ASSERT_TRUE(value_c == NULL);
-
-}
-
-TEST_F(OptionsTest, CheckFlags) {
-
-    int flag_a = sap_option_enabled(catched_options, (char*) "key");
-    int flag_b = sap_option_enabled(catched_options, (char*) "flag");
-    int flag_c = sap_option_enabled(catched_options, (char*) "unknown");
-
-    ASSERT_FALSE(flag_a);
-    ASSERT_TRUE(flag_b);
-    ASSERT_FALSE(flag_c);
+    sap_free(&parser);
 
 }
