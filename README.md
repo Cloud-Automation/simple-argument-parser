@@ -22,68 +22,68 @@ Execute `sudo make install` to install the library into your system.
 
 ````
 
-  int main_handler(int argc, char* argv[], sap_options_t* options) {
+  int command_handler(sap_command_list_t* commands, sap_option_list_t* options) {
+  
+      unsigned int counter = 0;
+      sap_option_t* option = sap_get_option_by_index(options, counter);
+
+      while (option) {
+      
+          printf("%s : %s\n", option.label, option.value);
+
+          option = sap_get_option_by_index(options, ++counter);
+
+      }
+     
+      return 0;
+  
+  }
+
+  int main_handler(sap_command_list_t* commands, sap_option_list_t* options) {
   
     /* handles the first arguments in ./somecommand --optionA --optionB ... */
+
+    sap_option_t* key_option = sap_get_option_by_key(options, "key");
+
+    if (!key_option) {
+        printf("No option 'key'.\n");
+        return -1;
+    }
+
+    printf("Value of option 'key' = %s\n", key_option->value);
 
     return 0;    
       
   }
 
   int main(int argc, char* argv[]) {
-  
-    sap_t* parser = sap_create();
+ 
+    sap_t parser;
 
-    sap_set_default_command(parser, main_handler);
+    sap_init(&parser, argc, argv[]);
 
-    int ret = sap_execute(parser);
+    sap_set_default_command(&parser, default_handler);
+    sap_set_command(&parser, "command", command_handler);
 
-    sap_destroy(parser);
+    int ret = sap_execute(&parser);
 
-    return ret;
-      
-  }
-
-
-````
-
-The parser itself only parses the first argument as a command. Since the file that should be executed is part of the argument list we create a parser and set a default handler. The default handler points to the `main_handler`` method which will be calld on execution. The 'main_handler` is now called with the `argc` minus the options following the program in the argument list. The `argv` array also starts at the next command.
-
-From the `main_handler` we create a new parser to handle subcommands.
-
-````
-
-  int suba_handler(int argc, char* argv[], sap_options_t* options) {...}
-  int subb_handler(int argc, char* argv[], sap_options_t* options) {...}
-  int help_handler(int argc, char* argv[], sap_options_t* options) {...}
-
-  int main_handler(int argc, char* argv[], sap_options_t* options) {
-  
-    sap_t* main_parser = sap_create();
-    
-    sap_add_command(main_parser, "subcommand_A", suba_handler);
-    sap_add_command(main_parser, "subcommand_B", subb_handler);
-    sap_add_command(main_parser, "help", help_handler);
-
-    sap_set_default_command(main_parser, help_handler);
-     
-    int ret = sap_execute(main_parser);
-
-    sap_destroy(parser);
+    sap_free(&parser);
 
     return ret;
       
   }
 
-  int main(int argc, char* argv[]) { ... }
 
 ````
 
-Here we see behaviour for commands like `./command [OPTIONS...] subcommand [OPTIONS...]` where subcommand can be anything like subcommand_A, subcommand_B or help. If a unknown or no subcommand is specified then the default command will be called. In this case it is the `help_handler`.
+The parser itself only parses the first argument as a command. Since the file that should be executed is part of the argument list we create a parser and set a default handler. The default handler points to the `default_handler` method which will be called on execution when no command is given or recognized. The `main_handler` is now called with a list of commands and options all parsed from the original `argc` and `argv`.
+
+When the `command` string turns up first in the `argc` datastructure then the command handler method is called. The command list given to the command handler method will be one short, missing the first command.
+
 
 ## License
 
-Copyright (C) 2016 Stefan Poeter (Stefan.Poeter[at]cloud-automation.de)
+Copyright (C) 2017 Stefan Poeter (Stefan.Poeter[at]cloud-automation.de)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
