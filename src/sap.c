@@ -35,7 +35,9 @@ int sap_add_command(sap_t* parser, char* command, command_handler handler) {
         if (strcmp(current_command->label, command) == 0) {
             return -1;
         }
-    
+   
+        current_command = current_command->next;
+
     }
 
     /* Create new command */
