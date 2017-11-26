@@ -318,7 +318,7 @@ int sap_execute_ex(sap_t* parser, sap_command_list_t* commands, sap_option_list_
 
     while (current_command) {
 
-        if (!current_command) {
+        if (!current_command || !first_command) {
           break;
         }
     
@@ -333,7 +333,7 @@ int sap_execute_ex(sap_t* parser, sap_command_list_t* commands, sap_option_list_
     }
 
 
-    if (current_command) {
+    if (current_command && first_command) {
 
       commands->first = commands->first->next;
 
