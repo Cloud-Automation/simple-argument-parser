@@ -17,6 +17,10 @@ set(CMAKE_C_FLAGS "--std=gnu99" ${CMAKE_C_FLAGS})
 
 option(WITH-TESTS "Compile the test application." OFF)
 
+include_directories(${PROJECT_SOURCE_DIR}/src)
+
+add_executable(example-01 ${CMAKE_SOURCE_DIR}/examples/example_01.c ${CMAKE_SOURCE_DIR}/src/sap.c ${CMAKE_SOURCE_DIR}/src/sap.h)
+
 IF(WITH-TESTS)
     add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
 endif()

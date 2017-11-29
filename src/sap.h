@@ -64,6 +64,9 @@ struct sap_st {
     sap_command_list_t commands;
     sap_command_t* default_command;
 
+    sap_command_list_t* arg_commands;
+    sap_option_list_t* arg_options;
+
     int argc;
     char** argv;
 

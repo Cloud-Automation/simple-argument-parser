@@ -2,6 +2,7 @@
 
 int sap_init(sap_t* parser, int argc, char** argv) {
 
+
     parser->argc = argc;
     parser->argv = argv;
 
@@ -9,6 +10,9 @@ int sap_init(sap_t* parser, int argc, char** argv) {
     parser->commands.last = NULL;
 
     parser->default_command = NULL;
+
+    parser->arg_commands = calloc(1, sizeof(sap_command_list_t));
+    parser->arg_options = calloc(1, sizeof(sap_option_list_t));
 
     parser->error_string = calloc(1, 100);
 
@@ -24,8 +28,6 @@ int sap_add_command(sap_t* parser, char* command, command_handler handler) {
 
     /* go through the command list and look for existing
      * commands, return -1 if so. */
-
-
 
     sap_command_t* current_command = parser->commands.first;
 
@@ -146,13 +148,14 @@ static sap_option_t* sap_parse_option(char* arg) {
      * and store this string as the options label */
 
     int len = match[1].rm_eo - match[1].rm_so;
-    char* label = calloc(1, len);
+    char* label = calloc(1, len + 1);
     memcpy(label, arg + match[1].rm_so, len);
 
     sap_option_t* option = calloc(1, sizeof(sap_option_t));
     option->label = label;
     option->value = NULL;
     option->is_flag = 1;
+    option->next = NULL;
 
     /* if there is no value assigned to the option then we mark
      * this option as flag. Meaning this option is enabled.
@@ -164,7 +167,7 @@ static sap_option_t* sap_parse_option(char* arg) {
     }
 
     len = match[3].rm_eo - match[3].rm_so;
-    char* value = calloc(1, len);
+    char* value = calloc(1, len + 1);
     memcpy(value, arg + match[3].rm_so, len);
 
     option->value = value;
@@ -205,34 +208,32 @@ static int sap_is_command(sap_t* parser, char* arg) {
 
 int sap_execute(sap_t* parser) {
 
-    sap_command_list_t* commands = calloc(1, sizeof(sap_command_list_t));
-    sap_option_list_t* options = calloc(1, sizeof(sap_option_list_t));
-
     sap_command_t* command = parser->default_command;
 
     for (unsigned int i = 1; i < parser->argc; i += 1) {
 
       char* command_str = parser->argv[i];
 
-      if (sap_is_command(parser, command_str)) {
+      if (!sap_is_command(parser, command_str)) {
+        continue;
+      }
 
-        sap_command_t* new_command = calloc(1, sizeof(sap_command_t));
-        new_command->label = calloc(1, strlen(command_str) + 1);
-        strcpy(new_command->label, command_str);
+      sap_command_t* new_command = calloc(1, sizeof(sap_command_t));
+      new_command->label = calloc(1, strlen(command_str) + 1);
+      strcpy(new_command->label, command_str);
 
-        if (!commands->first) {
+      if (!parser->arg_commands->first) {
 
-          commands->first = new_command; 
-          commands->last = new_command;
+        parser->arg_commands->first = new_command; 
+        parser->arg_commands->last = new_command;
 
-        } else {
-        
-          commands->last->next = new_command;
-          commands->last = new_command;
-
-        }
+      } else {
+      
+        parser->arg_commands->last->next = new_command;
+        parser->arg_commands->last = new_command;
 
       }
+
     }
 
     for (unsigned int i = 1; i < parser->argc; i += 1) {
@@ -241,33 +242,36 @@ int sap_execute(sap_t* parser) {
 
         /* check if current_string is option */
 
-        if (sap_is_option(parser, current_string)) {
-
-            sap_option_t* option = sap_parse_option(current_string);    
-
-            if (!options->first) {
-
-              options->first = option;
-              options->last = option;
-
-              option->next = NULL;
-
-            } else {
-            
-              options->last->next = option;
-              options->last = option;
-
-              option->next = NULL;
-
-            }
-
+        if (!sap_is_option(parser, current_string)) {
+          continue;
         }
-           
+
+        sap_option_t* option = sap_parse_option(current_string);    
+
+        if (!option) {
+          continue;
+        }
+
+        if (!parser->arg_options->first) {
+
+          parser->arg_options->first = option;
+          parser->arg_options->last = option;
+
+          option->next = NULL;
+
+        } else {
+        
+          parser->arg_options->last->next = option;
+          parser->arg_options->last = option;
+
+          option->next = NULL;
+
+        }           
     }
 
     /* get command from the parsers commands list */
 
-    sap_command_t* first_command = commands->first;
+    sap_command_t* first_command = parser->arg_commands->first;
     sap_command_t* current_command = parser->commands.first;
 
     while (current_command) {
@@ -286,26 +290,29 @@ int sap_execute(sap_t* parser) {
     
     }
 
+    int retVal = -1;
 
     if (current_command) {
 
-      commands->first = commands->first->next;
+      sap_command_t* first = parser->arg_commands->first;
+      parser->arg_commands->first = parser->arg_commands->first->next;
 
-      int retVal = current_command->handler(commands, options);
+      retVal = current_command->handler(parser->arg_commands, parser->arg_options);
 
-      free(commands->first);
-
-      return retVal;
+      free(first->label);
+      free(first);
 
     } else if (parser->default_command) {
 
-      return parser->default_command->handler(commands, options);
+      retVal = parser->default_command->handler(parser->arg_commands, parser->arg_options);
 
     } else {
     
-      return -1;
+      retVal = -1;
     
     }
+
+    return retVal;
 
 }
 
@@ -332,26 +339,29 @@ int sap_execute_ex(sap_t* parser, sap_command_list_t* commands, sap_option_list_
     
     }
 
+    int retVal = -1;
 
     if (current_command && first_command) {
 
+      sap_command_t* first = commands->first;
       commands->first = commands->first->next;
 
-      int retVal = current_command->handler(commands, options);
+      retVal = current_command->handler(commands, options);
 
-      free(commands->first);
-
-      return retVal;
+      free(first->label);
+      free(first);
 
     } else if (parser->default_command) {
 
-      return parser->default_command->handler(commands, options);
+      retVal = parser->default_command->handler(commands, options);
 
     } else {
     
-      return -1;
+      retVal = 1;
     
     }
+
+    return retVal;
 
 }
 
@@ -377,6 +387,30 @@ void sap_free(sap_t* parser) {
       free(tmp);
     }
 
+    sap_command_t* cc = parser->arg_commands->first;
+
+    while (cc) {
+      sap_command_t* nc = cc->next;
+      free(cc->label);
+      free(cc);
+      cc = nc;
+    }
+
+    sap_option_t* co = parser->arg_options->first;
+    while (co) {
+      sap_option_t* no = co->next;
+      free(co->label);
+      if (!co->is_flag) {
+        free(co->value);
+      }
+      free(co);
+      co = no;
+    }
+
+    free(parser->arg_commands);
+    free(parser->arg_options);
+
+
 }
 
 sap_option_t* sap_get_option_by_index(sap_option_list_t* options, unsigned int index) {
@@ -388,7 +422,6 @@ sap_option_t* sap_get_option_by_index(sap_option_list_t* options, unsigned int i
     unsigned int counter = 0;
 
     sap_option_t* curOption = options->first;
-
 
     while (curOption) {
 
@@ -413,15 +446,11 @@ sap_option_t* sap_get_option_by_key(sap_option_list_t* options, char* key) {
 
     sap_option_t* curOption = options->first;
 
-
-    while (curOption) {
-    
+    while (curOption) { 
         if (strcmp(curOption->label, key) == 0) {
             return curOption;
         }
-
         curOption =curOption->next;
-
     }
 
     return NULL;

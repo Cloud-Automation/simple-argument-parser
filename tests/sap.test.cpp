@@ -4,12 +4,15 @@
 int call_count = 0;
 int return_value = 0;
 
-sap_option_list_t* catched_options;
-sap_command_list_t* catched_commands;
+sap_option_list_t* catched_options = NULL;
+sap_command_list_t* catched_commands = NULL;
 
 int default_handler(sap_command_list_t* commands, sap_option_list_t* options) {
 
     call_count += 1;
+
+    catched_options = options;
+    catched_commands = commands;
 
     return return_value;
 
@@ -159,6 +162,7 @@ TEST(SAP, ExecuteMatchedHandlerWithOptions) {
     sap_option_t* third = sap_get_option_by_index(catched_options, 2);
 
     ASSERT_TRUE(first != NULL);
+    ASSERT_TRUE(first->label != NULL);
     ASSERT_STREQ(first->label, "key");
     ASSERT_STREQ(first->value, "value");
     ASSERT_EQ(0, first->is_flag);
