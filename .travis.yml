@@ -11,7 +11,7 @@ before_script:
     - pwd
     - mkdir build
     - cd build
-    - cmake -DWITH-TESTS=On ..
+    - cmake -DWITH_TESTS=On ..
     - make
     - cd ..
 script: "sh ./.travis-build.sh"
